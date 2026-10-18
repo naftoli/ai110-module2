@@ -57,6 +57,11 @@ class DailyPlan:
     skipped: List[SkippedTask] = field(default_factory=list)
     total_minutes: int = 0
 
+    @property
+    def missed_required(self) -> List[SkippedTask]:
+        """Required tasks that could not be scheduled (a problem the owner must resolve)."""
+        return [s for s in self.skipped if s.task.is_required]
+
 
 class Scheduler:
     def __init__(self, owner: Owner) -> None:
@@ -65,8 +70,9 @@ class Scheduler:
     def generate_plan(self) -> DailyPlan:
         """Required tasks first, then by priority (high to low), then shortest first.
 
-        Required tasks are always scheduled, even if they exceed the time budget.
-        Optional tasks are added only while they still fit.
+        Any task, required or not, is added only if it fits in the remaining time.
+        A required task that does not fit is skipped and flagged in
+        DailyPlan.missed_required so the owner can be told.
         """
         pending = [t for t in self.owner.get_all_tasks() if not t.completed]
         ranked = sorted(
@@ -77,7 +83,7 @@ class Scheduler:
         plan = DailyPlan()
         remaining = self.owner.available_minutes
         for task in ranked:
-            if task.is_required or task.duration_minutes <= remaining:
+            if task.duration_minutes <= remaining:
                 plan.scheduled.append(task)
                 plan.total_minutes += task.duration_minutes
                 remaining -= task.duration_minutes
@@ -97,18 +103,22 @@ class Scheduler:
             f"Plan for {self.owner.name}: {plan.total_minutes} of {budget} "
             f"available minutes used."
         ]
-        if plan.total_minutes > budget:
-            lines.append(
-                f"Warning: required tasks exceed your available time by "
-                f"{plan.total_minutes - budget} min."
-            )
+        if plan.missed_required:
+            lines.append("")
+            lines.append("PROBLEM: not enough time for required tasks:")
+            for s in plan.missed_required:
+                t = s.task
+                lines.append(
+                    f"- {t.title} ({t.pet_name}, {t.duration_minutes} min): {s.reason}. "
+                    f"Free up time or shorten other tasks."
+                )
 
         if plan.scheduled:
             lines.append("")
             lines.append("Scheduled (in order):")
             for i, t in enumerate(plan.scheduled, 1):
                 why = (
-                    "required task, always scheduled first"
+                    "required task, scheduled first"
                     if t.is_required
                     else f"priority {t.priority}, fit in the remaining time"
                 )
@@ -121,5 +131,6 @@ class Scheduler:
             lines.append("Skipped:")
             for s in plan.skipped:
                 t = s.task
-                lines.append(f"- {t.title} ({t.pet_name}): {s.reason}")
+                flag = " [REQUIRED]" if t.is_required else ""
+                lines.append(f"- {t.title} ({t.pet_name}){flag}: {s.reason}")
         return "\n".join(lines)
