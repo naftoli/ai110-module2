@@ -30,7 +30,7 @@ explain(plan) -> str, which gives a reason for each task included or skipped
 - Did your design change during implementation?
 - If yes, describe at least one change and why you made it.
 
----
+One change was to add another class called SkippedTask b/c it has more than one attribute and was originally going to be a tuple but is easier to change/extend if needed by having it as a class.
 
 ## 2. Scheduling Logic and Tradeoffs
 
