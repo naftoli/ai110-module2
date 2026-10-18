@@ -7,6 +7,24 @@
 - Briefly describe your initial UML design.
 - What classes did you include, and what responsibilities did you assign to each?
 
+Task Class
+Attributes: title, duration_minutes, priority (1–3), pet_name, is_required (meds, feeding), completed
+Methods: mark_complete()
+
+Pet Class
+Attributes: name, species, tasks: list[Task]
+Methods: add_task(), remove_task()
+
+Owner Class
+Attributes: name, available_minutes, pets: list[Pet]
+Methods: add_pet(), get_all_tasks()
+
+Scheduler Class
+Attributes: owner
+Methods:
+generate_plan() -> DailyPlan, which sorts required tasks first, then by priority, then fits them into available_minutes
+explain(plan) -> str, which gives a reason for each task included or skipped
+
 **b. Design changes**
 
 - Did your design change during implementation?
