@@ -25,6 +25,43 @@ Methods:
 generate_plan() -> DailyPlan, which sorts required tasks first, then by priority, then fits them into available_minutes
 explain(plan) -> str, which gives a reason for each task included or skipped
 
+**b. Design changes**
+
+- Did your design change during implementation?
+- If yes, describe at least one change and why you made it.
+
+One change was to add another class called SkippedTask b/c it has more than one attribute and was originally going to be a tuple but is easier to change/extend if needed by having it as a class.
+
+## 2. Scheduling Logic and Tradeoffs
+
+**a. Constraints and priorities**
+
+- What constraints does your scheduler consider (for example: time, priority, preferences)?
+- How did you decide which constraints mattered most?
+
+**b. Tradeoffs**
+
+- Describe one tradeoff your scheduler makes.
+- Why is that tradeoff reasonable for this scenario?
+
+---
+
+## 3. AI Collaboration
+
+**a. How you used AI**
+
+- How did you use AI tools during this project (for example: design brainstorming, debugging, refactoring)?
+- What kinds of prompts or questions were most helpful?
+
+So I asked the agent to help me identify the classes with their attributes and methods needed for this project.
+
+Here's what I put in:
+I would like to create an app that does the following:
+A busy pet owner needs help staying consistent with pet care. They want an assistant that can:
+Track pet care tasks (walks, feeding, meds, enrichment, grooming, etc.)
+Consider constraints (time available, priority, owner preferences)
+Produce a daily plan and explain why it chose that plan
+
 It first provided a pretty sophisticated outline of the classes, attributes, and methods needed for the project. I asked it to simplify it which it did.
 
 The original plan was as follows:
@@ -103,47 +140,15 @@ generate_plan() -> DailyPlan, which sorts required tasks first, then by priority
 explain(plan) -> str, which gives a reason for each task included or skipped
 DailyPlan could be a plain dataclass or just a return value, such as scheduled: list[Task] and skipped: list[(Task, reason)].
 
-**b. Design changes**
-
-- Did your design change during implementation?
-- If yes, describe at least one change and why you made it.
-
-One change was to add another class called SkippedTask b/c it has more than one attribute and was originally going to be a tuple but is easier to change/extend if needed by having it as a class.
-
-## 2. Scheduling Logic and Tradeoffs
-
-**a. Constraints and priorities**
-
-- What constraints does your scheduler consider (for example: time, priority, preferences)?
-- How did you decide which constraints mattered most?
-
-**b. Tradeoffs**
-
-- Describe one tradeoff your scheduler makes.
-- Why is that tradeoff reasonable for this scenario?
-
----
-
-## 3. AI Collaboration
-
-**a. How you used AI**
-
-- How did you use AI tools during this project (for example: design brainstorming, debugging, refactoring)?
-- What kinds of prompts or questions were most helpful?
-
-So I asked the agent to help me identify the classes with their attributes and methods needed for this project.
-
-Here's what I put in:
-I would like to create an app that does the following:
-A busy pet owner needs help staying consistent with pet care. They want an assistant that can:
-Track pet care tasks (walks, feeding, meds, enrichment, grooming, etc.)
-Consider constraints (time available, priority, owner preferences)
-Produce a daily plan and explain why it chose that plan
+I preferred the simplified plan b/c it's easier to work with and less prone to errors.
 
 **b. Judgment and verification**
 
 - Describe one moment where you did not accept an AI suggestion as-is.
 - How did you evaluate or verify what the AI suggested?
+
+So at first the scheduler decided that all required tasks are added whether or not there is enough time for it. I changed that so that even a required task is not added if there's not enough time. The Owner then gets notified about that.
+I read the code and confirmed that the AI created the first version and then changed to my recommended version. Then I ran tests on my version.
 
 ---
 
