@@ -25,6 +25,11 @@ classDiagram
         +get_all_tasks() List~Task~
     }
 
+    class SkippedTask {
+        +Task task
+        +str reason
+    }
+
     class DailyPlan {
         +List~Task~ scheduled
         +List~SkippedTask~ skipped
@@ -42,3 +47,5 @@ classDiagram
     Scheduler "1" --> "1" Owner : plans for
     Scheduler ..> DailyPlan : creates
     DailyPlan "1" o-- "*" Task : includes
+    DailyPlan "1" o-- "*" SkippedTask : skips
+    SkippedTask "1" --> "1" Task : refers to
