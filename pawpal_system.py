@@ -14,6 +14,7 @@ class Task:
     completed: bool = False
 
     def mark_complete(self) -> None:
+        """Mark the task as completed."""
         self.completed = True
 
 
@@ -24,13 +25,15 @@ class Pet:
     tasks: List[Task] = field(default_factory=list)
 
     def add_task(self, task: Task) -> None:
+        """Add a task to this pet and assign it to the pet."""
         task.pet_name = self.name
         self.tasks.append(task)
 
     def remove_task(self, task: Task) -> None:
+        """Remove a task from this pet if it exists."""
         if task in self.tasks:
             self.tasks.remove(task)
-
+            
 
 @dataclass
 class Owner:
@@ -39,9 +42,11 @@ class Owner:
     pets: List[Pet] = field(default_factory=list)
 
     def add_pet(self, pet: Pet) -> None:
+        """Add a pet to the owner's list of pets."""
         self.pets.append(pet)
 
     def get_all_tasks(self) -> List[Task]:
+        """Return all tasks owned by this owner's pets."""
         return [task for pet in self.pets for task in pet.tasks]
 
 
@@ -65,6 +70,7 @@ class DailyPlan:
 
 class Scheduler:
     def __init__(self, owner: Owner) -> None:
+        """Create a scheduler for the given owner."""
         self.owner = owner
 
     def generate_plan(self) -> DailyPlan:
@@ -98,6 +104,7 @@ class Scheduler:
         return plan
 
     def explain(self, plan: DailyPlan) -> str:
+        """Return a human-readable explanation of the generated plan."""
         budget = self.owner.available_minutes
         lines = [
             f"Plan for {self.owner.name}: {plan.total_minutes} of {budget} "

@@ -47,11 +47,12 @@ pip install -r requirements.txt
 Paste a sample of your app's CLI or Streamlit output here so a reader can see what a generated plan looks like:
 
 ```
-# e.g.:
-# Daily plan for Biscuit (Golden Retriever):
-#   08:00 — Morning walk (30 min) [priority: high]
-#   09:00 — Feeding (10 min) [priority: high]
-#   ...
+Plan for Alice: 65 of 120 available minutes used.
+
+Scheduled (in order):
+1. Walk Buddy (Buddy, 30 min): required task, scheduled first
+2. Feed Whiskers (Whiskers, 15 min): required task, scheduled first
+3. Play with Buddy (Buddy, 20 min): priority 1, fit in the remaining time
 ```
 
 ## 🧪 Testing PawPal+
@@ -68,27 +69,33 @@ Sample test output:
 
 ```
 # Paste your pytest output here
+================================================ test session starts ================================================
+platform darwin -- Python 3.13.3, pytest-9.1.1, pluggy-1.7.0
+rootdir: /Users/naftolir/Sites/ai110-module2
+plugins: anyio-4.15.1
+collected 17 items
+
+tests/test_pawpal.py ..                                                                                       [ 11%]
+tests/test_scheduler.py ...............                                                                       [100%]
+
+================================================ 17 passed in 0.02s =================================================
 ```
 
 ## 📐 Smarter Scheduling
 
 > Fill in once you've implemented scheduling logic.
 
-| Feature | Method(s) | Notes |
-|---------|-----------|-------|
-| Task sorting | | e.g., by priority, duration |
-| Filtering | | e.g., skip tasks if time runs out |
-| Conflict handling | | e.g., overlapping time slots |
-| Recurring tasks | | e.g., daily vs. weekly |
+| Feature           | Method(s) | Notes                             |
+| ----------------- | --------- | --------------------------------- |
+| Task sorting      |           | e.g., by priority, duration       |
+| Filtering         |           | e.g., skip tasks if time runs out |
+| Conflict handling |           | e.g., overlapping time slots      |
+| Recurring tasks   |           | e.g., daily vs. weekly            |
 
 ## 📸 Demo Walkthrough
 
 Describe your app in numbered steps so a reader can follow along without watching a video:
 
-1. <!-- Describe this step -->
-2. <!-- Describe this step -->
-3. <!-- Describe this step -->
-4. <!-- Describe this step -->
-5. <!-- Add more steps as needed -->
+1.
 
-**Screenshot or video** *(optional)*: <!-- Insert a screenshot or link to a demo video here -->
+**Screenshot or video** _(optional)_: <!-- Insert a screenshot or link to a demo video here -->
