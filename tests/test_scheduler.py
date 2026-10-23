@@ -53,26 +53,52 @@ def test_higher_priority_first_then_shorter_first():
     assert titles(plan.scheduled) == ["HighShort", "HighLong", "Mid", "Low"]
 
 
-def test_tasks_sort_by_time_after_priority():
+def test_sorting_tasks_in_correct_order():
     plan = plan_for(
         make_owner(
             100,
             task("Late", 15, 2, time="09:30"),
             task("Early", 10, 2, time="08:00"),
             task("SamePriority", 5, 2, time="08:15"),
+            task("Required", 5, 1, True, time="08:45"),
         )
     )
-    assert titles(plan.scheduled) == ["Early", "SamePriority", "Late"]
+    assert titles(plan.scheduled) == ["Required", "Early", "SamePriority", "Late"]
 
 
-def test_scheduler_sort_key_groups_required_priority_time_and_duration():
-    scheduler = Scheduler(Owner("Sam", 60))
-    early = task("Early", 10, 2, time="08:00")
-    late = task("Late", 15, 2, time="09:30")
-    required = task("Meds", 5, 1, True, time="08:30")
+def test_daily_and_weekly_tasks_are_recreated_correctly_when_done():
+    dog = Pet("Rex", "dog")
+    daily = Task("Walk", 20, 2, "Rex", False, False, datetime(2026, 10, 1, 8, 0), "daily")
+    weekly = Task("Vet", 30, 3, "Rex", False, False, datetime(2026, 10, 1, 9, 0), "weekly")
+    dog.add_task(daily)
+    dog.add_task(weekly)
 
-    assert scheduler._task_sort_key(required) == (0, -1, required.time, 5)
-    assert scheduler._task_sort_key(early) < scheduler._task_sort_key(late)
+    dog.complete_task(daily)
+    dog.complete_task(weekly)
+
+    assert dog.tasks[-2].title == "Walk"
+    assert dog.tasks[-2].time == datetime(2026, 10, 2, 8, 0)
+    assert dog.tasks[-2].recurrence == "daily"
+    assert dog.tasks[-1].title == "Vet"
+    assert dog.tasks[-1].time == datetime(2026, 10, 8, 9, 0)
+    assert dog.tasks[-1].recurrence == "weekly"
+    assert dog.tasks[-1].completed is False
+
+
+def test_scheduler_flags_duplicate_datetimes():
+    owner = Owner("Sam", 120)
+    dog = Pet("Rex", "dog")
+    cat = Pet("Mia", "cat")
+    owner.add_pet(dog)
+    owner.add_pet(cat)
+
+    dog.add_task(Task("Walk", 20, 2, "Rex", False, False, datetime(2026, 10, 23, 8, 0), "once"))
+    cat.add_task(Task("Groom", 15, 2, "Mia", False, False, datetime(2026, 10, 23, 8, 0), "once"))
+
+    plan = Scheduler(owner).generate_plan()
+
+    assert any("Walk" in warning and "Groom" in warning for warning in plan.warnings)
+    assert "2026-10-23 08:00:00" in "\n".join(plan.warnings)
 
 
 def test_optional_task_that_does_not_fit_is_skipped_with_reason():

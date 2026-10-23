@@ -83,19 +83,42 @@ tests/test_scheduler.py ...............                                         
 
 ## 📐 Smarter Scheduling
 
-> Fill in once you've implemented scheduling logic.
+So I actually updated the current generate_plan function to include the time element. I also added conflict detection logic in find_time_conflicts method. The recurring task recreation is in the method next_instance
 
-| Feature           | Method(s) | Notes                             |
-| ----------------- | --------- | --------------------------------- |
-| Task sorting      |           | e.g., by priority, duration       |
-| Filtering         |           | e.g., skip tasks if time runs out |
-| Conflict handling |           | e.g., overlapping time slots      |
-| Recurring tasks   |           | e.g., daily vs. weekly            |
+| Feature           | Method(s)           | Notes                             |
+| ----------------- | ------------------- | --------------------------------- |
+| Task sorting      | task_sort_key       | e.g., by priority, duration       |
+| Filtering         | task_sort_key       | e.g., skip tasks if time runs out |
+| Conflict handling | find_time_conflicts | e.g., overlapping time slots      |
+| Recurring tasks   | next_instance       | e.g., daily vs. weekly            |
 
 ## 📸 Demo Walkthrough
 
 Describe your app in numbered steps so a reader can follow along without watching a video:
 
-1.
+1. Create Owner (Update Default Owner)
+2. Add Pets
+3. Add Tasks for Pets
+4. Each task includes the name, priority, required or not, time duration, date and time of task, the pet it's associated with, and whether it's a one time task or daily / weekly
+5. Once all tasks have been entered, create and build your schedule
 
 **Screenshot or video** _(optional)_: <!-- Insert a screenshot or link to a demo video here -->
+
+## Testing Pawpal+
+
+Ran python -m pytest
+
+```
+====================================================== test session starts ======================================================
+platform darwin -- Python 3.13.3, pytest-9.1.1, pluggy-1.7.0
+rootdir: /Users/naftolir/Sites/ai110-module2
+plugins: anyio-4.15.1
+collected 27 items
+
+tests/test_pawpal.py ......                                                                                               [ 22%]
+tests/test_scheduler.py .....................                                                                             [100%]
+
+====================================================== 27 passed in 0.05s ======================================================
+```
+
+My confidence level: \*\*\*\*
