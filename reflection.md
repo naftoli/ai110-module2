@@ -39,10 +39,19 @@ One change was to add another class called SkippedTask b/c it has more than one 
 - What constraints does your scheduler consider (for example: time, priority, preferences)?
 - How did you decide which constraints mattered most?
 
+First checks whether it's required or not, then checks the priority, then the time (11am, 2pm), and then finally
+if it fits into the amount of time the owner has.
+
+The time aspect was something I added b/c I noticed that when giving it 2 tasks, for example to eat lunch and take an afternoon walk, and it was obvious that the eating lunch should be first. However, since there was no time associated with the scheduler, since the afternoon walk was entered first, it was shown first.
+
+That's when it became obvious that we need to also have a time element and I used AI to help me flesh out how it would work and add it to the code.
+
 **b. Tradeoffs**
 
 - Describe one tradeoff your scheduler makes.
 - Why is that tradeoff reasonable for this scenario?
+
+One big trade off is the ability to fit in the maximum number of tasks in the available time. Instead, we are adding tasks based on a strict set of rules, which works fine for the pet system but may not be as good in other situations.
 
 ---
 
@@ -159,23 +168,48 @@ I read the code and confirmed that the AI created the first version and then cha
 - What behaviors did you test?
 - Why were these tests important?
 
+I tested to make sure the the scheduler worked correctly and correctly chose the tasks based on our rules.
+The scheduler is really the main crux of the program and therefore it needed to be tested the most.
+
 **b. Confidence**
 
 - How confident are you that your scheduler works correctly?
 - What edge cases would you test next if you had more time?
 
----
+I created extensive tests to test the scheduler using AI. here's the output from AI:
+✅ Added comprehensive task and scheduler tests
+I expanded the test coverage to check:
+
+creation and normalization of all task types
+recurring task behavior for once/daily/weekly tasks
+invalid recurrence fallback
+owner + multi-pet task aggregation
+required-vs-optional scheduling
+duplicate-time conflict warnings
+zero-budget and other edge cases
+repeated rescheduling for completed recurring tasks
+The tests are in test_pawpal.py, and the existing scheduler coverage remains in test_scheduler.py.
+
+Verification
+I ran the full suite:
+
+Command: pytest -q
+Result: 26 passed in 0.02s
+This is fresh verification that the task model and scheduler behavior are covered and passing.
 
 ## 5. Reflection
 
 **a. What went well**
 
 - What part of this project are you most satisfied with?
+  How the scheduler was iteratively created
 
 **b. What you would improve**
 
 - If you had another iteration, what would you improve or redesign?
+  More thought into how to create a scheduler with different days and having the UI show it in a better way.
 
 **c. Key takeaway**
 
 - What is one important thing you learned about designing systems or working with AI on this project?
+  The most important thing now - with using AI - is to figure out the correct rules and constraints that the project needs, as well as using AI to help collaborate on system design and algorithmic efficiency.

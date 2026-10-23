@@ -1,5 +1,6 @@
 import os
 import sys
+from datetime import datetime, timedelta
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -15,8 +16,8 @@ def make_owner(minutes, *tasks):
     return owner
 
 
-def task(title, minutes, priority=1, required=False, completed=False):
-    return Task(title, minutes, priority, "", required, completed)
+def task(title, minutes, priority=1, required=False, completed=False, time="00:00"):
+    return Task(title, minutes, priority, "", required, completed, time)
 
 
 def titles(tasks):
@@ -50,6 +51,28 @@ def test_higher_priority_first_then_shorter_first():
         )
     )
     assert titles(plan.scheduled) == ["HighShort", "HighLong", "Mid", "Low"]
+
+
+def test_tasks_sort_by_time_after_priority():
+    plan = plan_for(
+        make_owner(
+            100,
+            task("Late", 15, 2, time="09:30"),
+            task("Early", 10, 2, time="08:00"),
+            task("SamePriority", 5, 2, time="08:15"),
+        )
+    )
+    assert titles(plan.scheduled) == ["Early", "SamePriority", "Late"]
+
+
+def test_scheduler_sort_key_groups_required_priority_time_and_duration():
+    scheduler = Scheduler(Owner("Sam", 60))
+    early = task("Early", 10, 2, time="08:00")
+    late = task("Late", 15, 2, time="09:30")
+    required = task("Meds", 5, 1, True, time="08:30")
+
+    assert scheduler._task_sort_key(required) == (0, -1, required.time, 5)
+    assert scheduler._task_sort_key(early) < scheduler._task_sort_key(late)
 
 
 def test_optional_task_that_does_not_fit_is_skipped_with_reason():
@@ -141,3 +164,53 @@ def test_task_helpers():
     pet.remove_task(t)
     assert pet.tasks == []
     pet.remove_task(t)  # removing a missing task is a no-op
+
+
+def test_daily_task_reschedules_when_marked_complete():
+    pet = Pet("Rex", "dog")
+    task1 = Task("Walk", 20, 2, "Rex", False, False, datetime(2026, 10, 1, 8, 0), "daily")
+    pet.add_task(task1)
+
+    pet.complete_task(task1)
+
+    assert task1.completed is True
+    assert len(pet.tasks) == 2
+    new_task = pet.tasks[-1]
+    assert new_task.title == "Walk"
+    assert new_task.completed is False
+    assert new_task.recurrence == "daily"
+    assert new_task.time == datetime(2026, 10, 2, 8, 0)
+    assert new_task.time - task1.time == timedelta(days=1)
+
+
+def test_weekly_task_reschedules_when_marked_complete():
+    pet = Pet("Rex", "dog")
+    task1 = Task("Vet", 30, 3, "Rex", False, False, datetime(2026, 10, 1, 9, 0), "weekly")
+    pet.add_task(task1)
+
+    pet.complete_task(task1)
+
+    assert task1.completed is True
+    assert len(pet.tasks) == 2
+    new_task = pet.tasks[-1]
+    assert new_task.title == "Vet"
+    assert new_task.completed is False
+    assert new_task.recurrence == "weekly"
+    assert new_task.time == datetime(2026, 10, 8, 9, 0)
+    assert new_task.time - task1.time == timedelta(days=7)
+
+
+def test_same_time_tasks_are_reported_as_conflicts():
+    owner = Owner("Sam", 120)
+    dog = Pet("Rex", "dog")
+    cat = Pet("Mia", "cat")
+    owner.add_pet(dog)
+    owner.add_pet(cat)
+
+    dog.add_task(Task("Walk", 20, 2, "Rex", False, False, datetime(2026, 10, 23, 8, 0), "once"))
+    cat.add_task(Task("Groom", 15, 2, "Mia", False, False, datetime(2026, 10, 23, 8, 0), "once"))
+
+    plan = Scheduler(owner).generate_plan()
+
+    assert any("Walk" in warning and "Groom" in warning for warning in plan.warnings)
+    assert "2026-10-23 08:00:00" in "\n".join(plan.warnings)
