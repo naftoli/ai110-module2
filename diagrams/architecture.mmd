@@ -1,0 +1,162 @@
+classDiagram
+    direction LR
+
+    class Owner {
+        +str name
+        +List~AvailabilityWindow~ availability
+        +OwnerPreferences preferences
+        +review(plan)
+        +resolve_conflict(conflict) ConflictResolution
+        +approve(plan)
+        +request_changes(feedback)
+    }
+
+    class OwnerPreferences {
+        +int break_minutes
+    }
+
+    class Pet {
+        +str name
+        +str species
+        +List~Task~ tasks
+    }
+
+    class Task {
+        +str title
+        +str pet_name
+        +int duration_minutes
+        +int priority
+        +bool is_required
+        +datetime time
+        +bool fixed_time
+        +str recurrence
+    }
+
+    class AvailabilityWindow {
+        +datetime starts_at
+        +datetime ends_at
+    }
+
+    class PlanAgent {
+        +start(owner, date) Turn
+        +provide_availability(windows) Turn
+        +resolve_conflict(option) Turn
+        +request_changes(change) Turn
+        +approve() Turn
+        +current_turn() Turn
+    }
+
+    class OwnerChannel {
+        <<interface>>
+        +ask_availability(date) List~AvailabilityWindow~
+        +ask_conflict(conflict) ResolutionOption
+        +review(plan) Approval or PlanChange
+    }
+
+    class PlanChange {
+        +Task task
+        +datetime new_start
+        +bool skip
+    }
+
+    class PlanningService {
+        +get_context(owner, date) PlanningContext
+        +propose_plan(context) DailyPlan
+        +apply_resolution(plan, resolution, context) DailyPlan
+        +revise_plan(plan, context, change) DailyPlan
+        +approve(plan) DailyPlan
+        +save_approved_plan(plan)
+    }
+
+    class PlanningContext {
+        +date plan_date
+        +List~Task~ tasks
+        +List~AvailabilityWindow~ availability
+        +OwnerPreferences preferences
+    }
+
+    class Scheduler {
+        +build_candidate(context) DailyPlan
+        +find_conflicts(plan, context) List~Conflict~
+        +find_free_slot(plan, item, context) ScheduledTask
+    }
+
+    class Conflict {
+        +str kind
+        +List~Task~ tasks
+        +List~ResolutionOption~ options
+        +str description
+    }
+
+    class ResolutionOption {
+        +str action
+        +int task_index
+        +str label
+    }
+
+    class ConflictResolution {
+        +Conflict conflict
+        +ResolutionOption option
+    }
+
+    class PlanStatus {
+        <<enumeration>>
+        PROPOSED
+        NEEDS_OWNER_INPUT
+        REVISED
+        APPROVED
+    }
+
+    class DailyPlan {
+        +date plan_date
+        +List~ScheduledTask~ scheduled
+        +List~UnscheduledTask~ unscheduled
+        +List~Conflict~ open_conflicts
+        +PlanStatus status
+    }
+
+    class ScheduledTask {
+        +Task task
+        +datetime starts_at
+        +datetime ends_at
+    }
+
+    class UnscheduledTask {
+        +Task task
+        +str reason
+    }
+
+    class TaskRepository {
+        <<interface>>
+        +get_tasks_for_date(owner, date) List~Task~
+        +save_approved_plan(plan)
+    }
+
+    Owner "1" o-- "*" Pet : cares for
+    Owner "1" o-- "*" AvailabilityWindow : available during
+    Owner "1" *-- "1" OwnerPreferences : sets
+    Pet "1" o-- "*" Task : has
+    PlanAgent --> PlanningService : requests proposals and revisions
+    PlanAgent --> Owner : asks and explains and gets approval
+    PlanningService --> TaskRepository : reads tasks and saves approved plan
+    PlanningService --> Scheduler : requests candidate schedule
+    PlanningService ..> PlanningContext : assembles
+    Scheduler ..> PlanningContext : respects constraints and preferences
+    Scheduler ..> DailyPlan : produces
+    Scheduler ..> Conflict : detects but never resolves
+    PlanAgent ..> ConflictResolution : obtains from owner
+    PlanningService ..> ConflictResolution : applies only owner choices
+    Owner ..> ConflictResolution : decides
+    ConflictResolution --> Conflict : answers
+    ConflictResolution --> ResolutionOption : chosen
+    Conflict "1" o-- "*" ResolutionOption : offers
+    OwnerChannel ..> ConflictResolution : relays owner choice
+    OwnerChannel ..> PlanChange : relays owner edits
+    PlanAgent ..> OwnerChannel : driven through run_session
+    PlanningService ..> PlanChange : applies on revision
+    DailyPlan "1" o-- "*" Conflict : holds open conflicts
+    DailyPlan --> PlanStatus : has
+    DailyPlan "1" o-- "*" ScheduledTask : includes
+    DailyPlan "1" o-- "*" UnscheduledTask : explains omissions
+    ScheduledTask --> Task : schedules
+    UnscheduledTask --> Task : refers to

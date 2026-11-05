@@ -1,0 +1,57 @@
+sequenceDiagram
+    actor Owner
+    participant Agent as PlanAgent
+    participant Service as PlanningService
+    participant Scheduler
+    participant Repo as TaskRepository
+
+    Owner->>Agent: Start planning for a date
+    Agent->>Service: get_context(owner, date)
+    Service->>Repo: get_tasks_for_date(owner, date)
+    Repo-->>Service: tasks
+    Service-->>Agent: PlanningContext
+
+    opt Availability or preferences missing
+        Agent->>Owner: ask_for_missing_context()
+        Owner-->>Agent: availability and preferences
+    end
+
+    Agent->>Service: propose_plan(context)
+    Service->>Scheduler: build_candidate(context)
+    Scheduler-->>Service: DailyPlan
+    Service->>Scheduler: find_conflicts(plan, context)
+    Scheduler-->>Service: conflicts
+    Service-->>Agent: DailyPlan with status PROPOSED or NEEDS_OWNER_INPUT
+
+    loop Each open conflict (agent never resolves on its own)
+        Agent->>Owner: ask_owner_about_conflict(conflict)
+        Note over Agent,Owner: Explain the conflict and offer options such as<br/>move a task or shorten it or leave it unscheduled
+        Owner-->>Agent: ConflictResolution
+        Agent->>Service: apply_resolution(plan, resolution)
+        Service->>Scheduler: find_conflicts(plan, context)
+        Scheduler-->>Service: remaining conflicts
+        Service-->>Agent: updated DailyPlan
+    end
+
+    Agent->>Owner: present_plan(plan)
+
+    loop Until the owner approves
+        alt Owner requests changes
+            Owner->>Agent: request_changes(feedback)
+            Agent->>Service: revise_plan(context, feedback)
+            Service-->>Agent: DailyPlan with status REVISED
+            Note over Agent,Owner: Any new conflicts go through the<br/>ask-the-owner step again
+            Agent->>Owner: present_plan(plan)
+        else Owner approves
+            Owner->>Agent: approve(plan)
+            Agent->>Service: approve(plan)
+            Note over Service: status becomes APPROVED<br/>only with zero open conflicts
+        end
+    end
+
+    Agent->>Service: save_approved_plan(plan)
+    Note over Service,Repo: Rejects any plan that is not APPROVED
+    Service->>Repo: save_approved_plan(plan)
+    Repo-->>Service: saved
+    Service-->>Agent: saved
+    Agent->>Owner: Confirm the plan is saved

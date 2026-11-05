@@ -2,6 +2,11 @@ from datetime import datetime, date, time
 
 import streamlit as st
 from pawpal_system import Task, Pet, Owner, Scheduler
+from pawpal.agent import Done, NeedConflictResolution, NeedContext, PlanAgent, ReviewPlan
+from pawpal.models import AvailabilityWindow
+from pawpal.plan import PlanChange, format_plan
+from pawpal.repository import InMemoryTaskRepository
+from pawpal.service import PlanningService
 
 st.set_page_config(page_title="PawPal+", page_icon="🐾", layout="centered")
 st.title("🐾 PawPal+")
@@ -161,3 +166,68 @@ with st.form("build_schedule_form"):
             st.markdown("### Skipped tasks")
             for item in plan.skipped:
                 st.write(f"- {item.task.title} ({item.task.pet_name}): {item.reason}")
+
+st.divider()
+
+st.subheader("Plan with the assistant")
+st.caption("The assistant proposes a timeline, asks you about every conflict, and saves only after you approve.")
+
+if "agent" not in st.session_state:
+    st.session_state.agent = PlanAgent(PlanningService(InMemoryTaskRepository()))
+    st.session_state.turn = None
+
+agent = st.session_state.agent
+turn = st.session_state.turn
+
+col_date, col_from, col_to, col_break = st.columns(4)
+with col_date:
+    plan_date = st.date_input("Plan date", value=date.today(), key="assistant_date")
+with col_from:
+    free_from = st.time_input("Free from", value=time(7, 0), key="assistant_from")
+with col_to:
+    free_to = st.time_input("Free until", value=time(20, 0), key="assistant_to")
+with col_break:
+    break_minutes = st.number_input("Break between tasks (min)", min_value=0, max_value=60, value=0)
+
+if st.button("Start planning"):
+    owner.availability = []
+    owner.preferences.break_minutes = int(break_minutes)
+    turn = agent.start(owner, plan_date)
+    if isinstance(turn, NeedContext):
+        turn = agent.provide_availability(
+            [AvailabilityWindow(datetime.combine(plan_date, free_from), datetime.combine(plan_date, free_to))]
+        )
+    st.session_state.turn = turn
+    st.rerun()
+
+if isinstance(turn, NeedConflictResolution):
+    st.warning(f"Conflict: {turn.conflict.description}")
+    labels = [option.label for option in turn.conflict.options]
+    choice = st.radio("How should I handle it?", labels, key="conflict_choice")
+    if st.button("Apply my choice"):
+        st.session_state.turn = agent.resolve_conflict(turn.conflict.options[labels.index(choice)])
+        st.rerun()
+elif isinstance(turn, ReviewPlan):
+    st.code(format_plan(turn.plan), language="text")
+    if st.button("Approve and save plan"):
+        st.session_state.turn = agent.approve()
+        st.rerun()
+    if turn.plan.scheduled:
+        with st.form("assistant_change_form"):
+            names = [f"{s.task.title} ({s.task.pet_name})" for s in turn.plan.scheduled]
+            target = st.selectbox("Change a task", names)
+            new_time = st.time_input("Move to", value=time(8, 0))
+            skip = st.checkbox("Leave it unscheduled instead")
+            if st.form_submit_button("Request change"):
+                task = turn.plan.scheduled[names.index(target)].task
+                change = PlanChange(
+                    task=task,
+                    new_start=None if skip else datetime.combine(turn.plan.plan_date, new_time),
+                    skip=skip,
+                )
+                st.session_state.turn = agent.request_changes(change)
+                st.rerun()
+elif isinstance(turn, Done):
+    st.success("Plan approved and saved.")
+    st.code(format_plan(turn.plan), language="text")
+
